@@ -1,0 +1,31 @@
+{
+	"name": "mongodb-support",
+	"displayName": "MongoDB Support",
+	"description": "Support connecting to MongoDB in Visual Studio Code",
+	"version": "1.0.6",
+	"publisher": "LinJun",
+	"icon": "logo/mongodb.png",
+	"engines": {
+		"vscode": "^1.68.0"
+	},
+	"categories": [
+		"Extension Packs"
+	],
+	"extensionPack": [
+		"cweijan.vscode-database-client2",
+		"cweijan.dbclient-jdbc"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cweijan/vscode-database-client.git"
+	},
+	"keywords": [
+		"mongo",
+		"mongodb"
+	],
+	"__metadata": {
+		"installedTimestamp": 1750756523563,
+		"targetPlatform": "undefined",
+		"size": 178841
+	}
+}
