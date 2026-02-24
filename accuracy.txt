@@ -1,0 +1,6 @@
+python evaluate_models.py
+
+
+
+
+run this in the terminal to check the accuracy
