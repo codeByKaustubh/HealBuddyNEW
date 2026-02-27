@@ -1,0 +1,16 @@
+{
+  "input_path": "symptom_disease_dataset_realistic_duplicated.csv",
+  "strategy": "drop_conflicts",
+  "target_column": "Disease",
+  "feature_count": 29,
+  "input_rows": 600,
+  "input_classes": 30,
+  "exact_duplicate_rows": 548,
+  "unique_rows_after_exact_dedup": 52,
+  "conflicting_pattern_count": 1,
+  "conflicting_rows_after_exact_dedup": 2,
+  "output_path": "cleaned_dataset.csv",
+  "output_rows": 50,
+  "output_classes": 28,
+  "duplicate_ratio_input": 0.913333
+}
