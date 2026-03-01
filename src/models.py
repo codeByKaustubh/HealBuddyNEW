@@ -4,10 +4,11 @@ import numpy as np
 import pandas as pd
 from lime.lime_tabular import LimeTabularExplainer
 from sklearn.base import clone
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, cross_validate
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.preprocessing import LabelEncoder
 
 from src.data import get_feature_columns, get_target_column
@@ -20,12 +21,12 @@ def build_models(random_state: int) -> Dict[str, Any]:
             random_state=random_state,
             class_weight="balanced_subsample",
         ),
-        "Extra Trees": ExtraTreesClassifier(
-            n_estimators=300,
+        "Logistic Regression": LogisticRegression(
+            max_iter=2000,
+            multi_class="multinomial",
             random_state=random_state,
-            class_weight="balanced_subsample",
         ),
-        "K-Nearest Neighbors": KNeighborsClassifier(n_neighbors=3),
+        "Naive Bayes": BernoulliNB(),
     }
 
 

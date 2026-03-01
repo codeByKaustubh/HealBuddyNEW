@@ -1,22 +1,24 @@
 # HealBuddy Symptom Checker
 
-A Streamlit-based symptom checker demo with three ML models and local explainability using SHAP and LIME.
+A Streamlit-based multipage symptom checker demo with three ML models and local explainability using SHAP and LIME.
 
 ## Features
-- Text-first symptom input with synonym handling (for example `stomach ache -> Abdominal Pain`)
-- Three model options:
-  - Random Forest
-  - Extra Trees
-  - K-Nearest Neighbors
-- Top predictions with probability thresholding
-- SHAP and LIME local explanations
-- Leakage-safe model evaluation metrics in UI:
-  - Holdout Accuracy
-  - Holdout Macro F1
-  - Cross-validation Macro F1 (grouped by symptom pattern)
+- Landing page with system overview and CTA
+- Symptom checker with:
+  - Symptom selection (typed + multiselect)
+  - Model selection
+  - Prediction results with confidence and risk category
+  - SHAP and LIME explanations
+- Model comparison page:
+  - Probability charts
+  - Accuracy metrics
+  - Confusion matrices
+  - SHAP summary comparison
+- Disease information, dataset transparency, about, feedback, and admin pages
 
 ## Project Structure
-- `app.py`: Streamlit UI and prediction flow
+- `app.py`: landing page
+- `pages/`: Streamlit multipage views
 - `evaluate_models.py`: CLI model evaluation
 - `src/config.py`: project constants and tunables
 - `src/data.py`: data loading and symptom parsing

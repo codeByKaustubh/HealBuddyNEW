@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 
 def get_shap_values_for_class(
     model: Any, X_background: pd.DataFrame, x_row: np.ndarray, class_idx: int
 ) -> np.ndarray:
-    if isinstance(model, (RandomForestClassifier, ExtraTreesClassifier)):
+    if isinstance(model, RandomForestClassifier):
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(x_row.reshape(1, -1))
     else:
