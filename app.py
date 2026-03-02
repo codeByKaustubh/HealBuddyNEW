@@ -17,7 +17,7 @@ def main() -> None:
         st.caption("Choose or type symptoms to build your input profile.")
     with c2:
         st.markdown("**2. Run Models**")
-        st.caption("Compare predictions from Random Forest, Logistic Regression, and Naive Bayes.")
+        st.caption("Compare predictions from Random Forest, Logistic Regression, and Gradient Boosting.")
     with c3:
         st.markdown("**3. Review Explanations**")
         st.caption("Inspect confidence, risk level, SHAP, and LIME reasoning.")

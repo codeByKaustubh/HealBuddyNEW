@@ -8,9 +8,9 @@ from sklearn.preprocessing import LabelEncoder
 
 from src.app_services import (
     get_confidence_and_risk,
+    hybrid_probabilities,
     load_data_cached,
     record_prediction,
-    softmax_probabilities,
     train_models_cached,
 )
 from src.config import DATA_PATH, MIN_REQUIRED_SYMPTOMS, PROBABILITY_THRESHOLD, TOP_N_PREDICTIONS
@@ -29,8 +29,15 @@ def render_model_output(
     feature_cols: List[str],
     lime_explainer: LimeTabularExplainer,
     selected_symptoms: List[str],
+    y_encoded: np.ndarray,
 ) -> None:
-    probs = softmax_probabilities(model, x_user)
+    probs = hybrid_probabilities(
+        model=model,
+        x_row=x_user,
+        X_train=X,
+        y_train=y_encoded,
+        n_classes=len(le.classes_),
+    )
     ranked_idx = np.argsort(probs)[::-1]
     pred_idx = ranked_idx[0]
     pred_label = le.inverse_transform([pred_idx])[0]
@@ -107,39 +114,27 @@ def main() -> None:
         (
             X,
             feature_cols,
-            _target_col,
+            target_col,
             le,
             fitted_models,
             lime_explainer,
-            eval_df,
+            _eval_df,
             _eval_notes,
         ) = train_models_cached(df)
     except Exception as exc:
         st.error(f"Failed to initialize app: {exc}")
         st.stop()
+    y_encoded = le.transform(df[target_col].astype(str))
 
     st.subheader("Model Selection")
     model_names = list(fitted_models.keys())
-    eval_by_model = eval_df.set_index("Model").to_dict(orient="index")
     selected_model_names: List[str] = st.multiselect(
         "Select one or more models",
         options=model_names,
         default=[model_names[0]],
     )
 
-    row = st.columns(3)
-    for idx, model_name in enumerate(model_names):
-        with row[idx]:
-            model_eval = eval_by_model.get(model_name, {})
-            holdout_acc = model_eval.get("Holdout Accuracy", np.nan)
-            st.metric(model_name, f"{holdout_acc:.2%}" if not pd.isna(holdout_acc) else "N/A")
-
     st.subheader("Symptom Selection")
-    picked_symptoms = st.multiselect(
-        "Choose symptoms from list",
-        options=feature_cols,
-        default=[],
-    )
     typed_symptoms = st.text_input(
         "Or type symptoms (comma-separated)",
         placeholder="e.g., stomach pain, cough, fatigue",
@@ -158,7 +153,7 @@ def main() -> None:
             return
 
         resolved_symptoms, unmatched_symptoms = resolve_text_symptoms(typed_symptoms, feature_cols)
-        merged_symptoms = sorted(set(picked_symptoms).union(set(resolved_symptoms)))
+        merged_symptoms = sorted(set(resolved_symptoms))
 
         if merged_symptoms:
             st.info(f"Recognized symptoms: {', '.join(merged_symptoms)}")
@@ -215,6 +210,7 @@ def main() -> None:
             feature_cols=feature_cols,
             lime_explainer=lime_explainer,
             selected_symptoms=st.session_state.get("selected_symptoms", []),
+            y_encoded=y_encoded,
         )
 
 

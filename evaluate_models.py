@@ -1,6 +1,10 @@
+import warnings
+
 from src.config import DATA_PATH, RANDOM_STATE
 from src.data import load_data
 from src.models import train_models
+
+warnings.filterwarnings("ignore")
 
 
 def main():

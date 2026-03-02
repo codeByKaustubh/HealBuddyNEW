@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 from lime.lime_tabular import LimeTabularExplainer
 from sklearn.base import clone
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, cross_validate
-from sklearn.naive_bayes import BernoulliNB
 from sklearn.preprocessing import LabelEncoder
 
 from src.data import get_feature_columns, get_target_column
@@ -20,13 +20,22 @@ def build_models(random_state: int) -> Dict[str, Any]:
             n_estimators=300,
             random_state=random_state,
             class_weight="balanced_subsample",
+            max_features="sqrt",
+            max_depth=6,
+            min_samples_leaf=3,
         ),
         "Logistic Regression": LogisticRegression(
             max_iter=2000,
-            multi_class="multinomial",
             random_state=random_state,
+            class_weight="balanced",
+            C=0.005,
         ),
-        "Naive Bayes": BernoulliNB(),
+        "Gradient Boosting": HistGradientBoostingClassifier(
+            random_state=random_state,
+            max_iter=400,
+            learning_rate=0.05,
+            max_depth=6,
+        ),
     }
 
 

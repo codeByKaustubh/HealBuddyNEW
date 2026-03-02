@@ -15,7 +15,7 @@ def main() -> None:
     st.subheader("Technology Used")
     st.write(
         "The platform is built with Streamlit and Scikit-learn using three classifiers: "
-        "Random Forest, Logistic Regression, and Naive Bayes. Explanations are generated using SHAP and LIME."
+        "Random Forest, Logistic Regression, and Gradient Boosting. Explanations are generated using SHAP and LIME."
     )
 
     st.subheader("Research Motivation")

@@ -107,3 +107,43 @@ def dataset_overview(df: pd.DataFrame) -> Dict[str, Any]:
 
 def softmax_probabilities(model: Any, x_row: np.ndarray) -> np.ndarray:
     return model.predict_proba(x_row.reshape(1, -1))[0]
+
+
+def hybrid_probabilities(
+    model: Any,
+    x_row: np.ndarray,
+    X_train: pd.DataFrame,
+    y_train: np.ndarray,
+    n_classes: int,
+    model_weight: float = 0.75,
+) -> np.ndarray:
+    """
+    Blend model probabilities with symptom-pattern similarity.
+    This helps on tiny sparse datasets by leveraging nearest historical patterns.
+    """
+    model_probs = softmax_probabilities(model, x_row)
+    X_arr = X_train.values.astype(int)
+    x = x_row.astype(int).reshape(1, -1)
+
+    intersections = (X_arr * x).sum(axis=1).astype(float)
+    unions = ((X_arr + x) > 0).sum(axis=1).astype(float)
+    sim = np.divide(intersections, unions, out=np.zeros_like(intersections), where=unions > 0)
+
+    class_scores = np.zeros(n_classes, dtype=float)
+    for cls in range(n_classes):
+        cls_mask = y_train == cls
+        if not np.any(cls_mask):
+            continue
+        cls_sim = sim[cls_mask]
+        # Combine max and mean similarity to avoid overreacting to one noisy neighbor.
+        class_scores[cls] = 0.6 * np.max(cls_sim) + 0.4 * np.mean(cls_sim)
+
+    total = class_scores.sum()
+    if total <= 0:
+        return model_probs
+    sim_probs = class_scores / total
+    blended = model_weight * model_probs + (1.0 - model_weight) * sim_probs
+    blend_total = blended.sum()
+    if blend_total <= 0:
+        return model_probs
+    return blended / blend_total
