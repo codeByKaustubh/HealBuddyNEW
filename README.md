@@ -9,12 +9,7 @@ A Streamlit-based multipage symptom checker demo with three ML models and local 
   - Model selection
   - Prediction results with confidence/risk category and low-confidence warning
   - SHAP and LIME explanations
-- Model comparison page:
-  - Probability charts
-  - Accuracy metrics
-  - Confusion matrices
-  - SHAP summary comparison
-- Disease information, dataset transparency, about, feedback, and admin pages
+- Disease information, about, and feedback pages
 
 ## Project Structure
 - `app.py`: landing page
@@ -22,7 +17,7 @@ A Streamlit-based multipage symptom checker demo with three ML models and local 
 - `evaluate_models.py`: CLI model evaluation
 - `src/config.py`: project constants and tunables
 - `src/data.py`: data loading and symptom parsing
-- `src/models.py`: model training and evaluation
+- `src/models.py`: model training and evaluation (Random Forest, Logistic Regression, Naive Bayes)
 - `src/explainability.py`: SHAP/LIME helpers
 
 ## Quick Start

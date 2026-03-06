@@ -133,7 +133,12 @@ def dataset_overview(df: pd.DataFrame) -> Dict[str, Any]:
 
 
 def softmax_probabilities(model: Any, x_row: np.ndarray) -> np.ndarray:
-    return model.predict_proba(x_row.reshape(1, -1))[0]
+    raw = np.asarray(model.predict_proba(x_row.reshape(1, -1))[0], dtype=float)
+    raw = np.nan_to_num(raw, nan=0.0, posinf=0.0, neginf=0.0)
+    total = raw.sum()
+    if total <= 0:
+        return np.full_like(raw, 1.0 / len(raw))
+    return raw / total
 
 
 def hybrid_probabilities(
@@ -154,6 +159,7 @@ def hybrid_probabilities(
         return model_probs
 
     blended = model_weight * model_probs + (1.0 - model_weight) * sim_probs
+    blended = np.nan_to_num(blended, nan=0.0, posinf=0.0, neginf=0.0)
     blend_total = blended.sum()
     if blend_total <= 0:
         return model_probs
@@ -169,6 +175,7 @@ def consensus_probabilities(
     # With sparse symptom input, rely a bit more on similarity evidence.
     adjusted_model_weight = model_weight if n_selected_symptoms >= 3 else min(model_weight, 0.5)
     blended = adjusted_model_weight * model_probs + (1.0 - adjusted_model_weight) * similarity_probs
+    blended = np.nan_to_num(blended, nan=0.0, posinf=0.0, neginf=0.0)
     total = blended.sum()
     if total <= 0:
         return model_probs

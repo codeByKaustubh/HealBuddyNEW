@@ -1,12 +1,16 @@
 import streamlit as st
 
 from src.app_services import get_disease_content, load_data_cached
+from src.auth import render_auth_sidebar, require_roles
 from src.config import DATA_PATH
 
 st.set_page_config(page_title="HealBuddy | Disease Information", layout="wide")
 
 
 def main() -> None:
+    require_roles(["user", "admin"])
+    render_auth_sidebar()
+
     st.title("Disease Information")
 
     df = load_data_cached(DATA_PATH)

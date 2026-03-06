@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+from src.auth import render_auth_sidebar, require_roles
 
 st.set_page_config(page_title="HealBuddy | Contact & Feedback", layout="wide")
 
@@ -20,6 +21,9 @@ def _append_feedback(feedback_row: dict) -> bool:
 
 
 def main() -> None:
+    require_roles(["user", "admin"])
+    render_auth_sidebar()
+
     st.title("Contact / Feedback")
     st.write("Use this page to report incorrect predictions, suggest improvements, or share general feedback.")
 
