@@ -7,13 +7,22 @@ from lime.lime_tabular import LimeTabularExplainer
 from sklearn.preprocessing import LabelEncoder
 
 from src.app_services import (
+    compute_similarity_probabilities,
+    consensus_probabilities,
     get_confidence_and_risk,
     hybrid_probabilities,
     load_data_cached,
     record_prediction,
     train_models_cached,
 )
-from src.config import DATA_PATH, MIN_REQUIRED_SYMPTOMS, PROBABILITY_THRESHOLD, TOP_N_PREDICTIONS
+from src.config import (
+    DATA_PATH,
+    LOW_CONFIDENCE_THRESHOLD,
+    MIN_REQUIRED_SYMPTOMS,
+    MODEL_PROBABILITY_WEIGHT,
+    PROBABILITY_THRESHOLD,
+    TOP_N_PREDICTIONS,
+)
 from src.data import make_input_vector, resolve_text_symptoms, suggest_closest_symptoms
 from src.explainability import get_shap_values_for_class, plot_explanation_bar
 
@@ -31,13 +40,29 @@ def render_model_output(
     selected_symptoms: List[str],
     y_encoded: np.ndarray,
 ) -> None:
-    probs = hybrid_probabilities(
+    model_hybrid_probs = hybrid_probabilities(
         model=model,
         x_row=x_user,
         X_train=X,
         y_train=y_encoded,
         n_classes=len(le.classes_),
+        model_weight=MODEL_PROBABILITY_WEIGHT,
     )
+    similarity_probs = compute_similarity_probabilities(x_user, X, y_encoded, len(le.classes_))
+    probs = consensus_probabilities(
+        model_probs=model_hybrid_probs,
+        similarity_probs=similarity_probs,
+        n_selected_symptoms=len(selected_symptoms),
+        model_weight=MODEL_PROBABILITY_WEIGHT,
+    )
+
+    exact_pattern_mask = np.all(X.values == x_user.reshape(1, -1), axis=1)
+    if np.any(exact_pattern_mask):
+        exact_labels = y_encoded[exact_pattern_mask]
+        exact_counts = np.bincount(exact_labels, minlength=len(le.classes_)).astype(float)
+        exact_probs = exact_counts / exact_counts.sum()
+        probs = 0.7 * exact_probs + 0.3 * probs
+
     ranked_idx = np.argsort(probs)[::-1]
     pred_idx = ranked_idx[0]
     pred_label = le.inverse_transform([pred_idx])[0]
@@ -50,6 +75,8 @@ def render_model_output(
     m2.metric("Confidence Level", confidence_label)
     m3.metric("Risk Category", risk_label)
     st.progress(min(max(pred_prob, 0.0), 1.0))
+    if pred_prob < LOW_CONFIDENCE_THRESHOLD:
+        st.warning("Prediction confidence is low. Add more specific symptoms for better reliability.")
 
     top_rows: List[Tuple[str, float]] = []
     for idx in ranked_idx:
@@ -118,7 +145,7 @@ def main() -> None:
             le,
             fitted_models,
             lime_explainer,
-            _eval_df,
+            eval_df,
             _eval_notes,
         ) = train_models_cached(df)
     except Exception as exc:
@@ -128,13 +155,24 @@ def main() -> None:
 
     st.subheader("Model Selection")
     model_names = list(fitted_models.keys())
+    best_model_row = eval_df.sort_values(
+        by=["CV Macro F1 (mean)", "Holdout Macro F1"],
+        ascending=False,
+        na_position="last",
+    ).iloc[0]
+    default_model_name = str(best_model_row["Model"]) if not eval_df.empty else model_names[0]
     selected_model_names: List[str] = st.multiselect(
         "Select one or more models",
         options=model_names,
-        default=[model_names[0]],
+        default=[default_model_name],
     )
 
     st.subheader("Symptom Selection")
+    selected_symptoms = st.multiselect(
+        "Select symptoms from the list",
+        options=feature_cols,
+        help="Select all currently observed symptoms. You can also add typed symptoms.",
+    )
     typed_symptoms = st.text_input(
         "Or type symptoms (comma-separated)",
         placeholder="e.g., stomach pain, cough, fatigue",
@@ -153,7 +191,7 @@ def main() -> None:
             return
 
         resolved_symptoms, unmatched_symptoms = resolve_text_symptoms(typed_symptoms, feature_cols)
-        merged_symptoms = sorted(set(resolved_symptoms))
+        merged_symptoms = sorted(set(selected_symptoms).union(resolved_symptoms))
 
         if merged_symptoms:
             st.info(f"Recognized symptoms: {', '.join(merged_symptoms)}")

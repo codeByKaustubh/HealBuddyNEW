@@ -4,10 +4,10 @@ st.set_page_config(page_title="HealBuddy | Home", layout="wide")
 
 
 def main() -> None:
-    st.title("AI-Based Disease Prediction System")
+    st.title("HealBuddy Clinical Triage Assistant")
     st.write(
-        "HealBuddy helps users check probable diseases from symptoms using trained machine "
-        "learning models and transparent explanations."
+        "HealBuddy provides a structured symptom-based risk estimation workflow with "
+        "multi-model predictions and transparent explanations."
     )
 
     st.subheader("How It Works")
@@ -24,7 +24,7 @@ def main() -> None:
 
     st.warning(
         "Disclaimer: This application is for educational support only and does not replace "
-        "professional medical diagnosis or treatment."
+        "professional medical diagnosis, emergency triage, or treatment."
     )
 
     if st.button("Start Symptom Check", type="primary"):

@@ -5,9 +5,9 @@ A Streamlit-based multipage symptom checker demo with three ML models and local 
 ## Features
 - Landing page with system overview and CTA
 - Symptom checker with:
-  - Symptom selection (typed + multiselect)
+  - Symptom selection (typed aliases + multiselect catalog)
   - Model selection
-  - Prediction results with confidence and risk category
+  - Prediction results with confidence/risk category and low-confidence warning
   - SHAP and LIME explanations
 - Model comparison page:
   - Probability charts
@@ -53,3 +53,4 @@ python clean_dataset.py --input symptom_disease_dataset_realistic_duplicated.csv
 ## Notes
 - This project is for educational/demo use only and is not a medical diagnosis system.
 - The default dataset includes many duplicated rows; evaluation is leakage-safe by grouping identical symptom patterns during holdout/CV.
+- The checker requires at least two recognized symptoms before prediction to reduce noisy outputs.

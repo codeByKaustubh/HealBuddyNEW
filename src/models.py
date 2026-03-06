@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from lime.lime_tabular import LimeTabularExplainer
 from sklearn.base import clone
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
@@ -30,9 +30,9 @@ def build_models(random_state: int) -> Dict[str, Any]:
             class_weight="balanced",
             C=0.005,
         ),
-        "Gradient Boosting": HistGradientBoostingClassifier(
+        "Gradient Boosting": GradientBoostingClassifier(
             random_state=random_state,
-            max_iter=400,
+            n_estimators=250,
             learning_rate=0.05,
             max_depth=6,
         ),

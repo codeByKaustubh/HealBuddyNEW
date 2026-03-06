@@ -54,6 +54,33 @@ def get_confidence_and_risk(probability: float) -> Tuple[str, str]:
     return "Low confidence", "Low likelihood"
 
 
+def compute_similarity_probabilities(
+    x_row: np.ndarray,
+    X_train: pd.DataFrame,
+    y_train: np.ndarray,
+    n_classes: int,
+) -> np.ndarray:
+    X_arr = X_train.values.astype(int)
+    x = x_row.astype(int).reshape(1, -1)
+
+    intersections = (X_arr * x).sum(axis=1).astype(float)
+    unions = ((X_arr + x) > 0).sum(axis=1).astype(float)
+    sim = np.divide(intersections, unions, out=np.zeros_like(intersections), where=unions > 0)
+
+    class_scores = np.zeros(n_classes, dtype=float)
+    for cls in range(n_classes):
+        cls_mask = y_train == cls
+        if not np.any(cls_mask):
+            continue
+        cls_sim = sim[cls_mask]
+        class_scores[cls] = 0.6 * np.max(cls_sim) + 0.4 * np.mean(cls_sim)
+
+    score_sum = class_scores.sum()
+    if score_sum <= 0:
+        return np.zeros(n_classes, dtype=float)
+    return class_scores / score_sum
+
+
 def init_usage_log() -> None:
     if "prediction_logs" not in st.session_state:
         st.session_state["prediction_logs"] = []
@@ -122,28 +149,27 @@ def hybrid_probabilities(
     This helps on tiny sparse datasets by leveraging nearest historical patterns.
     """
     model_probs = softmax_probabilities(model, x_row)
-    X_arr = X_train.values.astype(int)
-    x = x_row.astype(int).reshape(1, -1)
-
-    intersections = (X_arr * x).sum(axis=1).astype(float)
-    unions = ((X_arr + x) > 0).sum(axis=1).astype(float)
-    sim = np.divide(intersections, unions, out=np.zeros_like(intersections), where=unions > 0)
-
-    class_scores = np.zeros(n_classes, dtype=float)
-    for cls in range(n_classes):
-        cls_mask = y_train == cls
-        if not np.any(cls_mask):
-            continue
-        cls_sim = sim[cls_mask]
-        # Combine max and mean similarity to avoid overreacting to one noisy neighbor.
-        class_scores[cls] = 0.6 * np.max(cls_sim) + 0.4 * np.mean(cls_sim)
-
-    total = class_scores.sum()
-    if total <= 0:
+    sim_probs = compute_similarity_probabilities(x_row, X_train, y_train, n_classes)
+    if np.allclose(sim_probs.sum(), 0.0):
         return model_probs
-    sim_probs = class_scores / total
+
     blended = model_weight * model_probs + (1.0 - model_weight) * sim_probs
     blend_total = blended.sum()
     if blend_total <= 0:
         return model_probs
     return blended / blend_total
+
+
+def consensus_probabilities(
+    model_probs: np.ndarray,
+    similarity_probs: np.ndarray,
+    n_selected_symptoms: int,
+    model_weight: float,
+) -> np.ndarray:
+    # With sparse symptom input, rely a bit more on similarity evidence.
+    adjusted_model_weight = model_weight if n_selected_symptoms >= 3 else min(model_weight, 0.5)
+    blended = adjusted_model_weight * model_probs + (1.0 - adjusted_model_weight) * similarity_probs
+    total = blended.sum()
+    if total <= 0:
+        return model_probs
+    return blended / total
