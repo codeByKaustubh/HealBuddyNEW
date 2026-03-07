@@ -6,6 +6,7 @@ A Streamlit-based multipage symptom checker demo with three ML models and local 
 - Landing page with system overview and CTA
 - Symptom checker with:
   - Symptom selection (typed aliases + multiselect catalog)
+  - Dictionary-based spell correction for typed symptom text
   - Model selection
   - Prediction results with confidence/risk category and low-confidence warning
   - SHAP and LIME explanations

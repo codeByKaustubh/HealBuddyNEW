@@ -22,7 +22,11 @@ from src.config import (
     MODEL_PROBABILITY_WEIGHT,
     TOP_N_PREDICTIONS,
 )
-from src.data import make_input_vector, resolve_text_symptoms, suggest_closest_symptoms
+from src.data import (
+    make_input_vector,
+    resolve_text_symptoms_with_spellcheck,
+    suggest_closest_symptoms,
+)
 from src.explainability import get_shap_values_for_class, plot_explanation_bar
 
 st.set_page_config(page_title="HealBuddy | Symptom Checker", layout="wide")
@@ -138,11 +142,16 @@ def main() -> None:
             st.error("Please select at least one model.")
             return
 
-        resolved_symptoms, unmatched_symptoms = resolve_text_symptoms(typed_symptoms, feature_cols)
+        resolved_symptoms, unmatched_symptoms, spelling_corrections = (
+            resolve_text_symptoms_with_spellcheck(typed_symptoms, feature_cols)
+        )
         merged_symptoms = sorted(set(selected_symptoms).union(resolved_symptoms))
 
         if merged_symptoms:
             st.info(f"Recognized symptoms: {', '.join(merged_symptoms)}")
+        if spelling_corrections:
+            correction_text = ", ".join([f"'{bad}' -> '{good}'" for bad, good in spelling_corrections.items()])
+            st.caption(f"Dictionary spell-corrections applied: {correction_text}")
         if unmatched_symptoms:
             st.warning(f"Unrecognized typed symptoms: {', '.join(unmatched_symptoms)}")
             suggestions = suggest_closest_symptoms(unmatched_symptoms, feature_cols)
