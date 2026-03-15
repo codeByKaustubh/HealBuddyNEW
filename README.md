@@ -1,7 +1,4 @@
 # HealBuddy Symptom Checker
-
-A Streamlit-based multipage symptom checker demo with three ML models and local explainability using SHAP and LIME.
-
 ## Features
 - Landing page with system overview and CTA
 - Symptom checker with:
