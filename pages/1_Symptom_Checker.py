@@ -74,6 +74,65 @@ def top_diseases_from_probs(probs: np.ndarray, le: LabelEncoder, top_n: int) -> 
     return rows
 
 
+def build_confidence_explanation_tables(
+    X: pd.DataFrame,
+    disease_labels: pd.Series,
+    predicted_disease: str,
+    active_symptoms: List[str],
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    disease_mask = disease_labels.astype(str) == predicted_disease
+    if not bool(disease_mask.any()):
+        return pd.DataFrame(), pd.DataFrame()
+
+    disease_rates = X.loc[disease_mask].mean(axis=0).astype(float)
+    if bool((~disease_mask).any()):
+        other_rates = X.loc[~disease_mask].mean(axis=0).astype(float)
+    else:
+        other_rates = pd.Series(0.0, index=X.columns, dtype=float)
+
+    active_set = set(active_symptoms)
+
+    contribution_rows: List[Dict[str, Any]] = []
+    for symptom in active_symptoms:
+        if symptom not in X.columns:
+            continue
+        disease_rate = float(disease_rates[symptom])
+        other_rate = float(other_rates[symptom])
+        contribution_rows.append(
+            {
+                "Symptom": symptom,
+                "Contribution Score": disease_rate - other_rate,
+                "Seen in predicted disease": disease_rate,
+                "Seen in other diseases": other_rate,
+            }
+        )
+
+    contribution_df = pd.DataFrame(contribution_rows)
+    if not contribution_df.empty:
+        contribution_df = contribution_df.sort_values(
+            by=["Contribution Score", "Seen in predicted disease"],
+            ascending=False,
+        ).head(8)
+
+    expected_df = pd.DataFrame(
+        {
+            "Symptom": disease_rates.index,
+            "Expected frequency": disease_rates.values.astype(float),
+        }
+    ).sort_values(by="Expected frequency", ascending=False)
+
+    missing_df = expected_df[
+        (~expected_df["Symptom"].isin(active_set)) & (expected_df["Expected frequency"] >= 0.5)
+    ].head(8)
+
+    if missing_df.empty:
+        missing_df = expected_df[
+            (~expected_df["Symptom"].isin(active_set)) & (expected_df["Expected frequency"] >= 0.3)
+        ].head(8)
+
+    return contribution_df, missing_df
+
+
 def main() -> None:
     require_roles(["user", "admin"])
     render_auth_sidebar()
@@ -257,6 +316,45 @@ def main() -> None:
             pd.DataFrame(support_rows).style.format({"Consensus Probability": "{:.2%}"}),
             use_container_width=True,
         )
+
+        st.subheader("Confidence Explanation Panel")
+        st.caption(
+            "Shows which selected symptoms most support the top disease and which common symptoms of that disease "
+            "are currently missing from your input."
+        )
+        contribution_df, missing_df = build_confidence_explanation_tables(
+            X=X,
+            disease_labels=df[target_col],
+            predicted_disease=final_label,
+            active_symptoms=active_symptoms,
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Top contributing selected symptoms**")
+            if contribution_df.empty:
+                st.info("No selected symptoms available for contribution scoring.")
+            else:
+                st.dataframe(
+                    contribution_df.style.format(
+                        {
+                            "Contribution Score": "{:+.2f}",
+                            "Seen in predicted disease": "{:.0%}",
+                            "Seen in other diseases": "{:.0%}",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+        with c2:
+            st.markdown("**Missing expected symptoms**")
+            if missing_df.empty:
+                st.success("No major expected symptoms are missing from your current symptom input.")
+            else:
+                st.dataframe(
+                    missing_df.style.format({"Expected frequency": "{:.0%}"}),
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
         final_idx = int(le.transform([final_label])[0])
         explainer_model_name = max(

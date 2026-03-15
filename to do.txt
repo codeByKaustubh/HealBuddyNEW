@@ -1,0 +1,2 @@
+1. Improve the disease information page to explain each disease
+2. explain how do you calculate the final prediction (model consensus)
