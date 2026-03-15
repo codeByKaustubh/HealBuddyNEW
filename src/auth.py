@@ -140,6 +140,18 @@ def current_role() -> Optional[str]:
 
 
 def render_auth_sidebar() -> None:
+    # Hide Streamlit's auto-generated multipage nav so only the custom auth nav remains.
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     if st.session_state.get("is_authenticated", False):
         username = st.session_state.get("auth_username", "unknown")
         role = st.session_state.get("auth_role", "unknown")
