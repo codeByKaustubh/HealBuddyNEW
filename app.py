@@ -4,6 +4,22 @@ from src.auth import authenticate, create_user_account, current_role, login_user
 st.set_page_config(page_title="HealBuddy | Home", layout="wide")
 
 
+def hide_sidebar_for_auth_pages() -> None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            display: none;
+        }
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_login() -> None:
     st.title("HealBuddy Authentication")
     st.write("Choose an option: log in to an existing account or create a new user account.")
@@ -91,6 +107,7 @@ def render_user_home() -> None:
 
 def main() -> None:
     if not st.session_state.get("is_authenticated", False):
+        hide_sidebar_for_auth_pages()
         render_login()
         return
 
